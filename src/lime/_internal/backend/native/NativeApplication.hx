@@ -221,7 +221,7 @@ class NativeApplication
 				if (gamepad != null)
 				{
 					gamepad.onAxisMove.dispatch(gamepadEventInfo.axis, gamepadEventInfo.axisValue);
-					gamepad.onAxisMovePrecise.dispatch(gamepadEventInfo.axis, gamepadEventInfo.axisValue, Int64.fromFloat(gamepadEventInfo.timestamp));
+					gamepad.onAxisMovePrecise.dispatch(gamepadEventInfo.axis, gamepadEventInfo.axisValue, gamepadEventInfo.timestamp);
 				}
 
 			case BUTTON_DOWN:
@@ -229,7 +229,7 @@ class NativeApplication
 				if (gamepad != null)
 				{
 					gamepad.onButtonDown.dispatch(gamepadEventInfo.button);
-					gamepad.onButtonDownPrecise.dispatch(gamepadEventInfo.button, Int64.fromFloat(gamepadEventInfo.timestamp));
+					gamepad.onButtonDownPrecise.dispatch(gamepadEventInfo.button, gamepadEventInfo.timestamp);
 				}
 
 			case BUTTON_UP:
@@ -237,7 +237,7 @@ class NativeApplication
 				if (gamepad != null)
 				{
 					gamepad.onButtonUp.dispatch(gamepadEventInfo.button);
-					gamepad.onButtonUpPrecise.dispatch(gamepadEventInfo.button, Int64.fromFloat(gamepadEventInfo.timestamp));
+					gamepad.onButtonUpPrecise.dispatch(gamepadEventInfo.button, gamepadEventInfo.timestamp);
 				}
 
 			case CONNECT:
@@ -286,7 +286,7 @@ class NativeApplication
 			var int32:Float = keyEventInfo.keyCode;
 			var keyCode:KeyCode = Std.int(int32);
 			var modifier:KeyModifier = keyEventInfo.modifier;
-			var timestamp:Int64 = Int64.fromFloat(keyEventInfo.timestamp);
+			var timestamp:Float = keyEventInfo.timestamp;
 
 			switch (type)
 			{
@@ -434,7 +434,7 @@ class NativeApplication
 					}
 
 				case RENDER_CONTEXT_LOST:
-					if (window.__backend.useHardware && window.context != null)
+					if (window.context != null)
 					{
 						switch (window.context.type)
 						{
@@ -453,13 +453,7 @@ class NativeApplication
 					}
 
 				case RENDER_CONTEXT_RESTORED:
-					if (window.__backend.useHardware)
-					{
-						// GL.context = new OpenGLRenderContext ();
-						// window.context.gl = GL.context;
-
-						window.onRenderContextRestored.dispatch(window.context);
-					}
+					window.onRenderContextRestored.dispatch(window.context);
 			}
 		}
 	}
