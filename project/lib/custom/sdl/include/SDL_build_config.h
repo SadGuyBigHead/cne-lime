@@ -414,6 +414,7 @@
  */
 #define SDL_GPU_DISABLED 1      /**< GPU/Graphics subsystem is disabled */
 #define SDL_CAMERA_DISABLED 1   /**< Camera subsystem is disabled */
+#define SDL_RENDER_DISABLED 1   /**< Render subsystem is disabled */
 /** @} */
 
 /* ============================================================================
@@ -549,6 +550,18 @@
 # define SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC "libdrm.so.2"   /**< Dynamic libdrm loading */
 # define SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC_GBM "libgbm.so.1" /**< Dynamic libgbm loading */
 /** @} */
+
+/**
+ * @name Wayland Video Driver
+ * @brief Wayland Window System video driver with extensions.
+ * @{
+ */
+# define SDL_VIDEO_DRIVER_WAYLAND 1                                         /**< Wayland video driver */
+# define SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC "libwayland-client.so.0"          /**< Wayland client library */
+# define SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_CURSOR "libwayland-cursor.so.0"   /**< Wayland cursor library */
+# define SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_EGL "libwayland-egl.so.1"         /**< Wayland EGL library */
+# define SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_LIBDECOR "libdecor-0.so.0"        /**< Wayland client-side decorations library */
+# define SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_XKBCOMMON "libxkbcommon.so.0"     /**< Wayland keymap library */
 
 /**
  * @name X11 Video Driver

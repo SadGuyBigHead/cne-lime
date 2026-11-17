@@ -463,12 +463,12 @@ namespace lime {
 
 		if (Clipboard::HasText ()) {
 
-			std::wstring* text = Clipboard::GetText ();
+			char* text = Clipboard::GetText ();
 
 			if (text) {
 
-				value result = alloc_wstring (text->c_str ());
-				delete text;
+				value result = alloc_string (text);
+				free (text);
 				return result;
 
 			}
@@ -484,12 +484,13 @@ namespace lime {
 
 		if (Clipboard::HasText ()) {
 
-			std::wstring* text = Clipboard::GetText ();
+			char* text = Clipboard::GetText ();
 
 			if (text) {
 
-				vbyte* const result = hl_wstring_to_utf8_bytes (*text);
-				delete text;
+				vbyte* result = hl_alloc_bytes (strlen (text) + 1);
+				std::memcpy (result, text, strlen (text) + 1);
+				free (text);
 				return result;
 
 			}
@@ -2689,12 +2690,12 @@ namespace lime {
 
 	value lime_system_get_device_model () {
 
-		std::wstring* model = System::GetDeviceModel ();
+		char* model = System::GetDeviceModel ();
 
 		if (model) {
 
-			value result = alloc_wstring (model->c_str ());
-			delete model;
+			value result = alloc_string (model);
+			free (model);
 			return result;
 
 		} else {
@@ -2708,19 +2709,16 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_device_model) () {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* model = System::GetDeviceModel ();
+		char* model = System::GetDeviceModel ();
 
 		if (model) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*model);
-			delete model;
+			vbyte* result = hl_alloc_bytes (strlen (model) + 1);
+			std::memcpy (result, model, strlen (model) + 1);
+			free (model);
 			return result;
 
 		}
-
-		#endif
 
 		return 0;
 
@@ -2729,12 +2727,12 @@ namespace lime {
 
 	value lime_system_get_device_vendor () {
 
-		std::wstring* vendor = System::GetDeviceVendor ();
+		char* vendor = System::GetDeviceVendor ();
 
 		if (vendor) {
 
-			value result = alloc_wstring (vendor->c_str ());
-			delete vendor;
+			value result = alloc_string (vendor);
+			free (vendor);
 			return result;
 
 		} else {
@@ -2748,33 +2746,29 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_device_vendor) () {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* vendor = System::GetDeviceVendor ();
+		char* vendor = System::GetDeviceVendor ();
 
 		if (vendor) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*vendor);
-			delete vendor;
+			vbyte* result = hl_alloc_bytes (strlen (vendor) + 1);
+			std::memcpy (result, vendor, strlen (vendor) + 1);
+			free (vendor);
 			return result;
 
 		}
-
-		#endif
 
 		return 0;
 
 	}
 
-
 	value lime_system_get_directory (int type, HxString company, HxString title) {
 
-		std::wstring* path = System::GetDirectory ((SystemDirectory)type, hxs_utf8 (company, nullptr), hxs_utf8 (title, nullptr));
+		char* path = System::GetDirectory ((SystemDirectory)type, hxs_utf8 (company, nullptr), hxs_utf8 (title, nullptr));
 
 		if (path) {
 
-			value result = alloc_wstring (path->c_str ());
-			delete path;
+			value result = alloc_string (path);
+			free (path);
 			return result;
 
 		} else {
@@ -2785,22 +2779,18 @@ namespace lime {
 
 	}
 
-
 	HL_PRIM vbyte* HL_NAME(hl_system_get_directory) (int type, hl_vstring* company, hl_vstring* title) {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* path = System::GetDirectory ((SystemDirectory)type, company ? (char*)hl_to_utf8 ((const uchar*)company->bytes) : NULL, title ? (char*)hl_to_utf8 ((const uchar*)title->bytes) : NULL);
+		char* path = System::GetDirectory ((SystemDirectory)type, company ? (char*)hl_to_utf8 ((const uchar*)company->bytes) : NULL, title ? (char*)hl_to_utf8 ((const uchar*)title->bytes) : NULL);
 
 		if (path) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*path);
-			delete path;
+			vbyte* result = hl_alloc_bytes (strlen (path) + 1);
+			std::memcpy (result, path, strlen (path) + 1);
+			free (path);
 			return result;
 
 		}
-
-		#endif
 
 		return 0;
 
@@ -2879,12 +2869,12 @@ namespace lime {
 
 	value lime_system_get_platform_label () {
 
-		std::wstring* label = System::GetPlatformLabel ();
+		char* label = System::GetPlatformLabel ();
 
 		if (label) {
 
-			value result = alloc_wstring (label->c_str ());
-			delete label;
+			value result = alloc_string (label);
+			free (label);
 			return result;
 
 		} else {
@@ -2898,19 +2888,16 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_platform_label) () {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* label = System::GetPlatformLabel ();
+		char* label = System::GetPlatformLabel ();
 
 		if (label) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*label);
-			delete label;
+			vbyte* result = hl_alloc_bytes (strlen (label) + 1);
+			std::memcpy (result, label, strlen (label) + 1);
+			free (label);
 			return result;
 
 		}
-
-		#endif
 
 		return 0;
 
@@ -2919,17 +2906,17 @@ namespace lime {
 
 	value lime_system_get_platform_name () {
 
-		std::wstring* name = System::GetPlatformName ();
+		char* name = System::GetPlatformName ();
 
 		if (name) {
 
-			value result = alloc_wstring (name->c_str ());
-			delete name;
+			value result = alloc_string (name);
+			free (name);
 			return result;
 
 		} else {
 
-			return 0;
+			return alloc_null ();
 
 		}
 
@@ -2938,19 +2925,16 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_platform_name) () {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* name = System::GetPlatformName ();
+		char* name = System::GetPlatformName ();
 
 		if (name) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*name);
-			delete name;
+			vbyte* result = hl_alloc_bytes (strlen (name) + 1);
+			std::memcpy (result, name, strlen (name) + 1);
+			free (name);
 			return result;
 
 		}
-
-		#endif
 
 		return 0;
 
@@ -2959,12 +2943,12 @@ namespace lime {
 
 	value lime_system_get_platform_version () {
 
-		std::wstring* version = System::GetPlatformVersion ();
+		char* version = System::GetPlatformVersion ();
 
 		if (version) {
 
-			value result = alloc_wstring (version->c_str ());
-			delete version;
+			value result = alloc_string (version);
+			free (version);
 			return result;
 
 		} else {
@@ -2978,18 +2962,16 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_platform_version) () {
 
-		#ifndef EMSCRIPTEN
-
-		std::wstring* version = System::GetPlatformVersion ();
+		char* version = System::GetPlatformVersion ();
 
 		if (version) {
 
-			vbyte* const result = hl_wstring_to_utf8_bytes (*version);
-			delete version;
+			vbyte* result = hl_alloc_bytes (strlen (version) + 1);
+			std::memcpy (result, version, strlen (version) + 1);
+			free (version);
 			return result;
-		}
 
-		#endif
+		}
 
 		return 0;
 
@@ -3076,13 +3058,11 @@ namespace lime {
 
 	value lime_system_get_hint (HxString hintKey) {
 
-		std::wstring* hint = System::GetHint (hxs_utf8 (hintKey, nullptr));
+		const char* hint = System::GetHint (hxs_utf8 (hintKey, nullptr));
 
 		if (hint) {
 
-			value result = alloc_wstring (hint->c_str ());
-			delete hint;
-			return result;
+			return alloc_string (hint);
 
 		} else {
 
@@ -3094,16 +3074,7 @@ namespace lime {
 
 	HL_PRIM vbyte* HL_NAME(hl_system_get_hint) (hl_vstring* key) {
 
-		std::wstring* hint = System::GetHint (key ? hl_to_utf8(key->bytes) : nullptr);
-
-		if (hint) {
-
-			vbyte* const result = hl_wstring_to_utf8_bytes (*hint);
-			delete hint;
-			return result;
-		}
-
-		return 0;
+		return (vbyte*)System::GetHint (key ? hl_to_utf8(key->bytes) : nullptr);
 
 	}
 
@@ -3244,6 +3215,22 @@ namespace lime {
 	}
 
 
+	bool lime_window_set_frame_pacer_mode (value window, int mode) {
+
+		Window* targetWindow = (Window*)val_data (window);
+		return targetWindow->SetFramePacerMode (mode);
+
+	}
+
+
+	HL_PRIM bool HL_NAME(hl_window_set_frame_pacer_mode) (HL_CFFIPointer* window, int mode) {
+
+		Window* targetWindow = (Window*)window->ptr;
+		return targetWindow->SetFramePacerMode (mode);
+
+	}
+
+
 	void lime_window_close (value window) {
 
 		Window* targetWindow = (Window*)val_data (window);
@@ -3274,20 +3261,6 @@ namespace lime {
 	}
 
 
-	value lime_window_context_lock (value window) {
-
-		return (value)((Window*)val_data (window))->ContextLock (true);
-
-	}
-
-
-	HL_PRIM vdynamic* HL_NAME(hl_window_context_lock) (HL_CFFIPointer* window) {
-
-		return (vdynamic*)((Window*)window->ptr)->ContextLock (false);
-
-	}
-
-
 	void lime_window_context_make_current (value window) {
 
 		((Window*)val_data (window))->ContextMakeCurrent ();
@@ -3298,20 +3271,6 @@ namespace lime {
 	HL_PRIM void HL_NAME(hl_window_context_make_current) (HL_CFFIPointer* window) {
 
 		((Window*)window->ptr)->ContextMakeCurrent ();
-
-	}
-
-
-	void lime_window_context_unlock (value window) {
-
-		((Window*)val_data (window))->ContextUnlock ();
-
-	}
-
-
-	HL_PRIM void HL_NAME(hl_window_context_unlock) (HL_CFFIPointer* window) {
-
-		((Window*)window->ptr)->ContextUnlock ();
 
 	}
 
@@ -3392,23 +3351,6 @@ namespace lime {
 
 		Window* targetWindow = (Window*)window->ptr;
 		return (uintptr_t)targetWindow->GetContext ();
-
-	}
-
-
-	value lime_window_get_context_type (value window) {
-
-		Window* targetWindow = (Window*)val_data (window);
-		const char* type = targetWindow->GetContextType ();
-		return type ? alloc_string (type) : alloc_null ();
-
-	}
-
-
-	HL_PRIM vbyte* HL_NAME(hl_window_get_context_type) (HL_CFFIPointer* window) {
-
-		Window* targetWindow = (Window*)window->ptr;
-		return (vbyte*)targetWindow->GetContextType ();
 
 	}
 
@@ -4165,18 +4107,16 @@ namespace lime {
 	DEFINE_PRIME2v (lime_text_event_manager_register);
 	DEFINE_PRIME2v (lime_touch_event_manager_register);
 	DEFINE_PRIME5 (lime_window_alert);
+	DEFINE_PRIME2 (lime_window_set_frame_pacer_mode);
 	DEFINE_PRIME2 (lime_window_set_vsync_mode);
 	DEFINE_PRIME1v (lime_window_close);
 	DEFINE_PRIME1v (lime_window_context_flip);
-	DEFINE_PRIME1 (lime_window_context_lock);
 	DEFINE_PRIME1v (lime_window_context_make_current);
-	DEFINE_PRIME1v (lime_window_context_unlock);
 	DEFINE_PRIME5 (lime_window_create);
 	DEFINE_PRIME2v (lime_window_event_manager_register);
 	DEFINE_PRIME1v (lime_window_focus);
 	DEFINE_PRIME1 (lime_window_get_handle);
 	DEFINE_PRIME1 (lime_window_get_context);
-	DEFINE_PRIME1 (lime_window_get_context_type);
 	DEFINE_PRIME1 (lime_window_get_display);
 	DEFINE_PRIME1 (lime_window_get_display_mode);
 	DEFINE_PRIME1 (lime_window_get_height);
@@ -4365,18 +4305,16 @@ namespace lime {
 	DEFINE_HL_PRIM (_VOID, hl_text_event_manager_register, _FUN (_VOID, _NO_ARG) _TTEXT_EVENT);
 	DEFINE_HL_PRIM (_VOID, hl_touch_event_manager_register, _FUN (_VOID, _NO_ARG) _TTOUCH_EVENT);
 	DEFINE_HL_PRIM (_I32, hl_window_alert, _TCFFIPOINTER _I32 _STRING _STRING _ARR);
+	DEFINE_HL_PRIM (_BOOL, hl_window_set_frame_pacer_mode, _TCFFIPOINTER _I32);
 	DEFINE_HL_PRIM (_BOOL, hl_window_set_vsync_mode, _TCFFIPOINTER _I32);
 	DEFINE_HL_PRIM (_VOID, hl_window_close, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_VOID, hl_window_context_flip, _TCFFIPOINTER);
-	DEFINE_HL_PRIM (_DYN, hl_window_context_lock, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_VOID, hl_window_context_make_current, _TCFFIPOINTER);
-	DEFINE_HL_PRIM (_VOID, hl_window_context_unlock, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_TCFFIPOINTER, hl_window_create, _TCFFIPOINTER _I32 _I32 _I32 _STRING);
 	DEFINE_HL_PRIM (_VOID, hl_window_event_manager_register, _FUN (_VOID, _NO_ARG) _TWINDOW_EVENT);
 	DEFINE_HL_PRIM (_VOID, hl_window_focus, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_F64, hl_window_get_handle, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_F64, hl_window_get_context, _TCFFIPOINTER);
-	DEFINE_HL_PRIM (_BYTES, hl_window_get_context_type, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_I32, hl_window_get_display, _TCFFIPOINTER);
 	DEFINE_HL_PRIM (_VOID, hl_window_get_display_mode, _TCFFIPOINTER _TDISPLAYMODE);
 	DEFINE_HL_PRIM (_I32, hl_window_get_height, _TCFFIPOINTER);

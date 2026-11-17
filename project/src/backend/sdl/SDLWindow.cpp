@@ -44,20 +44,18 @@ namespace lime {
 
 	SDLWindow::SDLWindow (Application* application, int width, int height, int flags, const char* title) {
 
-		sdlTexture = 0;
-		sdlRenderer = 0;
 		context = 0;
 
-		contextWidth = 0;
-		contextHeight = 0;
+
 		#ifdef LIME_IMGUI
 		isPrimaryImGuiWindow = false;
 		#endif
 
 		currentApplication = application;
+
 		this->flags = flags;
 
-		int sdlWindowFlags = 0;
+		int sdlWindowFlags = SDL_WINDOW_OPENGL;
 
 		if (flags & WINDOW_FLAG_FULLSCREEN) sdlWindowFlags |= SDL_WINDOW_FULLSCREEN;
 		if (flags & WINDOW_FLAG_RESIZABLE) sdlWindowFlags |= SDL_WINDOW_RESIZABLE;
@@ -72,148 +70,145 @@ namespace lime {
 		if (flags & WINDOW_FLAG_ALWAYS_ON_TOP) sdlWindowFlags |= SDL_WINDOW_ALWAYS_ON_TOP;
 		#endif
 
-		if (flags & WINDOW_FLAG_HARDWARE) {
 
-			sdlWindowFlags |= SDL_WINDOW_OPENGL;
+		if (flags & WINDOW_FLAG_DEPTH_BUFFER) {
 
-			if (flags & WINDOW_FLAG_DEPTH_BUFFER) {
-
-				SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 32 - ((flags & WINDOW_FLAG_STENCIL_BUFFER) ? 8 : 0));
-
-			}
-
-			if (flags & WINDOW_FLAG_STENCIL_BUFFER) {
-
-				SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
-
-			}
-
-			if (flags & WINDOW_FLAG_HW_AA_HIRES) {
-
-				SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, true);
-				SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 4);
-
-			} else if (flags & WINDOW_FLAG_HW_AA) {
-
-				SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, true);
-				SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 2);
-
-			}
-
-			if (flags & WINDOW_FLAG_COLOR_DEPTH_32_BIT) {
-
-				SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
-				SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
-				SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 8);
-				SDL_GL_SetAttribute (SDL_GL_ALPHA_SIZE, 8);
-
-			} else {
-
-				SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 5);
-				SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 6);
-				SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 5);
-
-			}
+			SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 32 - ((flags & WINDOW_FLAG_STENCIL_BUFFER) ? 8 : 0));
 
 		}
 
-		float scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-		sdlWindow = SDL_CreateWindow (title, (int)(width * scale), (int)(height * scale), sdlWindowFlags);
+		if (flags & WINDOW_FLAG_STENCIL_BUFFER) {
+
+			SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
+
+		}
+
+		if (flags & WINDOW_FLAG_HW_AA_HIRES) {
+
+			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, true);
+			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 4);
+
+		} else if (flags & WINDOW_FLAG_HW_AA) {
+
+			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, true);
+			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 2);
+
+		}
+
+		if (flags & WINDOW_FLAG_COLOR_DEPTH_32_BIT) {
+
+			SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
+			SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
+			SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 8);
+			SDL_GL_SetAttribute (SDL_GL_ALPHA_SIZE, 8);
+
+		} else {
+
+			SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 5);
+			SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 6);
+			SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 5);
+
+		}
+
+		sdlWindow = SDL_CreateWindow (title, width, height, sdlWindowFlags);
 
 		if (!sdlWindow) {
 
-			printf ("Could not create SDL window: %s.\n", SDL_GetError ());
+			#if defined(IPHONE) || defined(APPLETV)
+			printf ("Could not create SDL Window: %s\n", SDL_GetError ());
+			#else
+			SDL_ShowSimpleMessageBox (SDL_MESSAGEBOX_ERROR, "Could not create SDL Window", SDL_GetError (), NULL);
+			#endif
+
 			return;
 
 		}
 
-		if (flags & WINDOW_FLAG_HARDWARE) {
+		static const GLContextRequest contextRequests[] = {
 
-			static const GLContextRequest contextRequests[] = {
+			#ifdef LIME_OPENGL_GL
+			{SDL_GL_CONTEXT_PROFILE_CORE, 4, 1, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
+			#ifdef HX_MACOS
+			{SDL_GL_CONTEXT_PROFILE_CORE, 3, 2, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
+			#else
+			{SDL_GL_CONTEXT_PROFILE_CORE, 3, 3, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
+			#endif
+			{SDL_GL_CONTEXT_PROFILE_COMPATIBILITY, 2, 1, 0},
+			#elif LIME_OPENGL_GLES2
+			{SDL_GL_CONTEXT_PROFILE_ES, 3, 0, 0},
+			{SDL_GL_CONTEXT_PROFILE_ES, 2, 0, 0},
+			#endif
 
-				#ifdef LIME_OPENGL_GL
-				#ifdef HX_MACOS
-				{SDL_GL_CONTEXT_PROFILE_CORE, 4, 1, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
-				{SDL_GL_CONTEXT_PROFILE_CORE, 3, 2, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
-				{SDL_GL_CONTEXT_PROFILE_COMPATIBILITY, 2, 1, 0},
-				#else
-				{SDL_GL_CONTEXT_PROFILE_CORE, 3, 3, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG},
-				{SDL_GL_CONTEXT_PROFILE_COMPATIBILITY, 2, 1, 0},
-				#endif
-				#elif LIME_OPENGL_GLES2
-				{SDL_GL_CONTEXT_PROFILE_ES, 3, 0, 0},
-				{SDL_GL_CONTEXT_PROFILE_ES, 2, 0, 0},
-				#endif
+		};
 
-			};
+		for (const GLContextRequest &contextRequest : contextRequests) {
 
-			for (const GLContextRequest &contextRequest : contextRequests) {
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, contextRequest.profile);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, contextRequest.major);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, contextRequest.minor);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextRequest.flags);
 
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, contextRequest.profile);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, contextRequest.major);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, contextRequest.minor);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextRequest.flags);
-
-				context = SDL_GL_CreateContext (sdlWindow);
-				if (context) break;
-
-			}
-
-			if (context && SDL_GL_MakeCurrent (sdlWindow, context)) {
-
-				SetVSyncMode ((flags & WINDOW_FLAG_VSYNC) ? WINDOW_VSYNC_ON : WINDOW_VSYNC_OFF);
-
-				OpenGLBindings::Init ();
-
-				#if defined(IPHONE) || defined(APPLETV)
-				SDL_PropertiesID props = SDL_GetWindowProperties(sdlWindow);
-				OpenGLBindings::defaultFramebuffer = (int)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_UIKIT_OPENGL_FRAMEBUFFER_NUMBER, 0);
-				OpenGLBindings::defaultRenderbuffer = (int)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_UIKIT_OPENGL_RENDERBUFFER_NUMBER, 0);
-				#endif
-
-				#ifdef LIME_IMGUI
-				static bool firstWindow = true;
-				isPrimaryImGuiWindow = firstWindow;
-				if (isPrimaryImGuiWindow) {
-					firstWindow = false;
-					
-					IMGUI_CHECKVERSION();
-					ImGui::CreateContext();
-					ImGuiIO& io = ImGui::GetIO();
-					io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-					io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-					io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-					io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-					io.ConfigErrorRecoveryEnableAssert = false;
-
-					// Setup Platform/Renderer backends
-					ImGui_ImplSDL3_InitForOpenGL(sdlWindow, context);
-					ImGui_ImplOpenGL3_Init("#version 150");
-				}
-				#endif
-
-			} else {
-
-				SDL_GL_DestroyContext (context);
-				context = NULL;
-
-			}
+			context = SDL_GL_CreateContext (sdlWindow);
+			if (context) break;
 
 		}
 
-		if (!context) {
+		if (context && SDL_GL_MakeCurrent (sdlWindow, context)) {
 
-			sdlRenderer = SDL_CreateRenderer (sdlWindow, SDL_SOFTWARE_RENDERER);
+			SetVSyncMode ((flags & WINDOW_FLAG_VSYNC) ? WINDOW_VSYNC_ON : WINDOW_VSYNC_OFF);
 
-		}
+			OpenGLBindings::Init ();
 
-		if (context || sdlRenderer) {
+			#if defined(IPHONE) || defined(APPLETV)
+			SDL_PropertiesID props = SDL_GetWindowProperties(sdlWindow);
+			OpenGLBindings::defaultFramebuffer = (int)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_UIKIT_OPENGL_FRAMEBUFFER_NUMBER, 0);
+			OpenGLBindings::defaultRenderbuffer = (int)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_UIKIT_OPENGL_RENDERBUFFER_NUMBER, 0);
+			#endif
+
+			#ifdef LIME_IMGUI
+			static bool firstWindow = true;
+			isPrimaryImGuiWindow = firstWindow;
+			if (isPrimaryImGuiWindow) {
+				firstWindow = false;
+
+				IMGUI_CHECKVERSION();
+				ImGui::CreateContext();
+				ImGuiIO& io = ImGui::GetIO();
+				io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+				io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+				io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+				io.ConfigErrorRecoveryEnableAssert = false;
+
+				// Setup Platform/Renderer backends
+				ImGui_ImplSDL3_InitForOpenGL(sdlWindow, context);
+				ImGui_ImplOpenGL3_Init("#version 150");
+			}
+			#endif
 
 			((SDLApplication*)currentApplication)->RegisterWindow (this);
 
 		} else {
 
-			printf ("Could not create SDL renderer: %s.\n", SDL_GetError ());
+			#if defined(IPHONE) || defined(APPLETV)
+			printf ("Could not create SDL GL Context: %s\n", SDL_GetError ());
+			#else
+			SDL_ShowSimpleMessageBox (SDL_MESSAGEBOX_ERROR, "Could not create SDL GL Context", SDL_GetError (), sdlWindow);
+			#endif
+
+			if (sdlWindow) {
+
+				SDL_DestroyWindow (sdlWindow);
+				sdlWindow = 0;
+
+			}
+
+			if (context) {
+
+				SDL_GL_DestroyContext (context);
+				context = 0;
+
+			}
 
 		}
 
@@ -237,13 +232,10 @@ namespace lime {
 
 		}
 
-		if (sdlRenderer) {
-
-			SDL_DestroyRenderer (sdlRenderer);
-
-		} else if (context) {
+		if (context) {
 
 			SDL_GL_DestroyContext (context);
+			context = 0;
 
 		}
 
@@ -321,7 +313,30 @@ namespace lime {
 
 	bool SDLWindow::SetVSyncMode (int mode) {
 
-		return SDL_GL_SetSwapInterval (mode);
+		bool result = SDL_GL_SetSwapInterval (mode);
+
+		if (result) {
+
+			FramePacer* framePacer = SDLApplication::GetFramePacer ();
+
+			if (framePacer) framePacer->RefreshSwapInterval ();
+
+		}
+
+		return result;
+
+	}
+
+
+	bool SDLWindow::SetFramePacerMode (int mode) {
+
+		FramePacer* framePacer = SDLApplication::GetFramePacer ();
+
+		if (!framePacer) return false;
+
+		framePacer->SetMode (mode);
+
+		return true;
 
 	}
 
@@ -368,94 +383,29 @@ namespace lime {
 			}
 			#endif
 
-			SDL_GL_SwapWindow (sdlWindow);
+			FramePacer* framePacer = SDLApplication::GetFramePacer ();
+			bool bound = framePacer && framePacer->IsBoundWindow (sdlWindow);
 
-		} else if (sdlRenderer) {
+			if (bound) {
 
-			SDL_RenderPresent (sdlRenderer);
+				// submit before the pacer waits, so the GPU works during the wait;
+				// an ungated swap flushes itself
+				if (framePacer->IsGated ()) {
 
-		}
-
-	}
-
-
-	void* SDLWindow::ContextLock (bool useCFFIValue) {
-
-		if (sdlRenderer) {
-
-			int width;
-			int height;
-
-			SDL_GetCurrentRenderOutputSize (sdlRenderer, &width, &height);
-
-			if (width != contextWidth || height != contextHeight) {
-
-				if (sdlTexture) {
-
-					SDL_DestroyTexture (sdlTexture);
+					glFlush ();
 
 				}
 
-				sdlTexture = SDL_CreateTexture (sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+				framePacer->WaitSwap ();
+				framePacer->OnSwapBegin ();
 
-				contextWidth = width;
-				contextHeight = height;
+				SDL_GL_SwapWindow (sdlWindow);
 
-			}
-
-			void *pixels;
-			int pitch;
-
-			if (useCFFIValue) {
-
-				if (SDL_LockTexture (sdlTexture, NULL, &pixels, &pitch)) {
-
-					value result = alloc_empty_object ();
-					alloc_field (result, val_id ("width"), alloc_int (contextWidth));
-					alloc_field (result, val_id ("height"), alloc_int (contextHeight));
-					alloc_field (result, val_id ("pixels"), alloc_float ((uintptr_t)pixels));
-					alloc_field (result, val_id ("pitch"), alloc_int (pitch));
-					return result;
-
-				} else {
-
-					return alloc_null ();
-
-				}
+				framePacer->OnSwapEnd (SDL_GetTicksNS ());
 
 			} else {
 
-				const int id_width = hl_hash_utf8 ("width");
-				const int id_height = hl_hash_utf8 ("height");
-				const int id_pixels = hl_hash_utf8 ("pixels");
-				const int id_pitch = hl_hash_utf8 ("pitch");
-
-				if (SDL_LockTexture (sdlTexture, NULL, &pixels, &pitch)) {
-
-					vdynamic* result = (vdynamic*)hl_alloc_dynobj();
-					hl_dyn_seti (result, id_width, &hlt_i32, contextWidth);
-					hl_dyn_seti (result, id_height, &hlt_i32, contextHeight);
-					hl_dyn_setd (result, id_pixels, (uintptr_t)pixels);
-					hl_dyn_seti (result, id_pitch, &hlt_i32, pitch);
-					return result;
-
-				} else {
-
-					return 0;
-
-				}
-
-			}
-
-		} else {
-
-			if (useCFFIValue) {
-
-				return alloc_null ();
-
-			} else {
-
-				return 0;
+				SDL_GL_SwapWindow (sdlWindow);
 
 			}
 
@@ -469,19 +419,6 @@ namespace lime {
 		if (sdlWindow && context) {
 
 			SDL_GL_MakeCurrent (sdlWindow, context);
-
-		}
-
-	}
-
-
-	void SDLWindow::ContextUnlock () {
-
-		if (sdlTexture) {
-
-			SDL_UnlockTexture (sdlTexture);
-			SDL_RenderClear (sdlRenderer);
-			SDL_RenderTexture (sdlRenderer, sdlTexture, NULL, NULL);
 
 		}
 
@@ -527,33 +464,6 @@ namespace lime {
 	void* SDLWindow::GetContext () {
 
 		return context;
-
-	}
-
-
-	const char* SDLWindow::GetContextType () {
-
-		if (context) {
-
-			return "opengl";
-
-		} else if (sdlRenderer) {
-
-			const char *name = SDL_GetRendererName (sdlRenderer);
-
-			if (name && std::strcmp (name, SDL_SOFTWARE_RENDERER)) {
-
-				return "software";
-
-			} else {
-
-				return "opengl";
-
-			}
-
-		}
-
-		return "none";
 
 	}
 
@@ -688,28 +598,7 @@ namespace lime {
 
 	void SDLWindow::ReadPixels (ImageBuffer *buffer, Rectangle *rect) {
 
-		if (sdlRenderer) {
-
-			SDL_Rect bounds = { 0, 0, 0, 0 };
-
-			if (rect) {
-
-				bounds.x = rect->x;
-				bounds.y = rect->y;
-				bounds.w = rect->width;
-				bounds.h = rect->height;
-
-			} else {
-
-				SDL_GetWindowSizeInPixels (sdlWindow, &bounds.w, &bounds.h);
-
-			}
-
-			buffer->Resize (bounds.w, bounds.h, 32);
-
-			buffer->data->buffer->b = (unsigned char *)(SDL_RenderReadPixels (sdlRenderer, &bounds)->pixels);
-
-		} else if (context) {
+		if (context) {
 
 			// TODO
 

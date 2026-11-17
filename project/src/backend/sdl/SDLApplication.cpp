@@ -47,9 +47,10 @@ namespace lime {
 	#endif
 
 
-	AutoGCRoot* Application::callback = 0;
 	SDLApplication* SDLApplication::currentApplication = 0;
 	bool inBackground = false;
+
+	static FrameWaitState frameWait;
 
 
 	const int analogAxisDeadZone = 1000;
@@ -810,14 +811,23 @@ namespace lime {
 					windowEvent.y = event->window.data2;
 					break;
 
-				case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-				{
-					SDL_Window * sdlWindow = SDL_GetWindowFromID(event->window.windowID);
-					float scale = SDL_GetWindowDisplayScale(sdlWindow);
+				case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+				case SDL_EVENT_WINDOW_RESIZED: {
+
+					int width = event->window.data1;
+					int height = event->window.data2;
+
+					if (width == 0 && height == 0) {
+
+						SDL_GetWindowSizeInPixels (SDL_GetWindowFromID (event->window.windowID), &width, &height);
+
+					}
+
 					windowEvent.type = WINDOW_RESIZE;
-					windowEvent.width = (int)(event->window.data1 / scale);
-					windowEvent.height = (int)(event->window.data2 / scale);
+					windowEvent.width = width;
+					windowEvent.height = height;
 					break;
+
 				}
 
 				case SDL_EVENT_WINDOW_RESTORED: windowEvent.type = WINDOW_RESTORE; break;
@@ -850,6 +860,8 @@ namespace lime {
 		SDL_SetiOSAnimationCallback (window->sdlWindow, 1, UpdateFrame, NULL);
 		#endif
 
+		framePacer.SetWindow (window->sdlWindow);
+
 	}
 
 
@@ -861,6 +873,15 @@ namespace lime {
 
 
 	bool SDLApplication::Update () {
+
+		// start the frame so render+swap lands just before the next compositor boundary
+		bool paced = false;
+
+		if (!inBackground) {
+
+			paced = framePacer.WaitFrameStart (frameTime.target);
+
+		}
 
 		SDL_Event event;
 
@@ -900,21 +921,19 @@ namespace lime {
 		frameTime.frame = frameTime.current - frameTime.previous;
 		frameTime.previous = frameTime.current;
 
+		if (paced) {
+
+				// pacing owns this frame: skip the time-based end-of-frame wait
+				framePacer.OnFrameEnd (frameTime.current);
+
+			}
+
 		// If the frame was faster than the target frame time, delay to cap FPS
-		if (frameTime.frame < frameTime.target) {
+		else if (frameTime.frame < frameTime.target) {
 
 			Uint64 deadline = frameTime.previous + (frameTime.target - frameTime.frame);
 
-			// Portion of the wait left to spinning; sleeps handle the rest to save CPU
-			const Uint64 SPIN_MARGIN_NS = 1500000; // 1.5 ms
-
-			Uint64 now = SDL_GetTicksNS ();
-			if (deadline > now + SPIN_MARGIN_NS) {
-				SDL_DelayNS (deadline - now - SPIN_MARGIN_NS);
-			}
-			while (SDL_GetTicksNS () < deadline) {
-				// Busy-wait until the exact frame deadline
-			}
+			FrameWaitUntil (frameWait, deadline);
 
 			// Measure the actual time spent waiting and add it to frameTime
 			frameTime.current = SDL_GetTicksNS ();
